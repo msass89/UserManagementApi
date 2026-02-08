@@ -1,0 +1,26 @@
+GET http://localhost:5150/user
+
+###
+GET http://localhost:5150/user/2
+
+###
+
+POST http://localhost:5150/user
+Content-Type: application/json
+
+{
+  "username": "Ada",
+  "email": "ada@example.com"
+}
+
+###
+PUT http://localhost:5150/user/1
+Content-Type: application/json
+
+{
+  "username": "JaneDoe",
+  "email": "jane.doe@example.com"
+}
+
+###
+DELETE http://localhost:5150/user/4
