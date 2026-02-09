@@ -1,7 +1,7 @@
 GET http://localhost:5150/user
 
 ###
-GET http://localhost:5150/user/2
+GET http://localhost:5150/user/1
 
 ###
 
@@ -9,8 +9,8 @@ POST http://localhost:5150/user
 Content-Type: application/json
 
 {
-  "username": "Ada",
-  "email": "ada@example.com"
+  "username": "Mara",
+  "email": "mara@example.com"
 }
 
 ###
@@ -23,4 +23,4 @@ Content-Type: application/json
 }
 
 ###
-DELETE http://localhost:5150/user/4
+DELETE http://localhost:5150/user/1
