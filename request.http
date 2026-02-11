@@ -1,12 +1,14 @@
 GET http://localhost:5150/user
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFkbWluIiwibmJmIjoxNzcwODEyNzMwLCJleHAiOjE3NzA4MTYzMzAsImlhdCI6MTc3MDgxMjczMCwiaXNzIjoiVXNlck1hbmFnZW1lbnRBcGkiLCJhdWQiOiJVc2VyTWFuYWdlbWVudEFwaSJ9.3RGj9UqS5A1E7p48nMjaC4pr0x9shHoB6Y33fRsLDT4
 
 ###
 GET http://localhost:5150/user/1
-
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFkbWluIiwibmJmIjoxNzcwODEyNzMwLCJleHAiOjE3NzA4MTYzMzAsImlhdCI6MTc3MDgxMjczMCwiaXNzIjoiVXNlck1hbmFnZW1lbnRBcGkiLCJhdWQiOiJVc2VyTWFuYWdlbWVudEFwaSJ9.3RGj9UqS5A1E7p48nMjaC4pr0x9shHoB6Y33fRsLDT4
 ###
 
 POST http://localhost:5150/user
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFkbWluIiwibmJmIjoxNzcwODEyNzMwLCJleHAiOjE3NzA4MTYzMzAsImlhdCI6MTc3MDgxMjczMCwiaXNzIjoiVXNlck1hbmFnZW1lbnRBcGkiLCJhdWQiOiJVc2VyTWFuYWdlbWVudEFwaSJ9.3RGj9UqS5A1E7p48nMjaC4pr0x9shHoB6Y33fRsLDT4
 
 {
   "username": "Mara",
@@ -16,6 +18,7 @@ Content-Type: application/json
 ###
 PUT http://localhost:5150/user/1
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFkbWluIiwibmJmIjoxNzcwODEyNzMwLCJleHAiOjE3NzA4MTYzMzAsImlhdCI6MTc3MDgxMjczMCwiaXNzIjoiVXNlck1hbmFnZW1lbnRBcGkiLCJhdWQiOiJVc2VyTWFuYWdlbWVudEFwaSJ9.3RGj9UqS5A1E7p48nMjaC4pr0x9shHoB6Y33fRsLDT4
 
 {
   "username": "JaneDoe",
@@ -24,3 +27,13 @@ Content-Type: application/json
 
 ###
 DELETE http://localhost:5150/user/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImFkbWluIiwibmJmIjoxNzcwODEyNzMwLCJleHAiOjE3NzA4MTYzMzAsImlhdCI6MTc3MDgxMjczMCwiaXNzIjoiVXNlck1hbmFnZW1lbnRBcGkiLCJhdWQiOiJVc2VyTWFuYWdlbWVudEFwaSJ9.3RGj9UqS5A1E7p48nMjaC4pr0x9shHoB6Y33fRsLDT4
+
+###
+POST http://localhost:5150/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "password"
+}

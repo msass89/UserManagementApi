@@ -32,3 +32,8 @@ C:\.Net\Course 5 Back-End\UserManagementApi\obj\Debug\net10.0\refint\UserManagem
 C:\.Net\Course 5 Back-End\UserManagementApi\obj\Debug\net10.0\UserManagementApi.pdb
 C:\.Net\Course 5 Back-End\UserManagementApi\obj\Debug\net10.0\UserManagementApi.genruntimeconfig.cache
 C:\.Net\Course 5 Back-End\UserManagementApi\obj\Debug\net10.0\ref\UserManagementApi.dll
+C:\.Net\Course 5 Back-End\UserManagementApi\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+C:\.Net\Course 5 Back-End\UserManagementApi\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\.Net\Course 5 Back-End\UserManagementApi\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+C:\.Net\Course 5 Back-End\UserManagementApi\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
+C:\.Net\Course 5 Back-End\UserManagementApi\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
