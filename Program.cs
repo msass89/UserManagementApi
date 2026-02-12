@@ -2,6 +2,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using UserManagementApi;
+using UserManagementApi.Middleware;
+using UserManagementApi.Options;
 
 /* Secret key and issuer for JWT (store securely in production)
 Instead of hardcoding these values, consider using a secure configuration source 
@@ -12,117 +15,24 @@ string jwtIssuer = "UserManagementApi";
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSingleton<UserManagementApi.UserService>();
+builder.Services.AddSingleton<UserService>();
+builder.Services.Configure<JwtOptions>(options =>
+{
+    options.Key = jwtKey;
+    options.Issuer = jwtIssuer;
+});
 
 var app = builder.Build();
 
-// Middleware to catch unhandled exceptions and return JSON error responses
-app.Use(async (context, next) =>
-{
-    try
-    {
-        await next();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Unhandled exception: {ex.Message}");
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json";
+// Use custom exception handling middleware
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-        // Return a generic error message in JSON format to avoid exposing sensitive details about the exception to the client.
-        var errorJson = System.Text.Json.JsonSerializer.Serialize(new { error = "Internal server error." });
-        await context.Response.WriteAsync(errorJson);
-    }
-});
+app.UseMiddleware<JWTAuthentificationMiddleware>();
 
-/* Middleware to authenticate requests using a simple token validation mechanism.
-This middleware checks for the presence of an Authorization header in the incoming HTTP request,
-and validates the token against a predefined list of valid tokens. If the token is missing or invalid,
-the middleware responds with a 401 Unauthorized status code and a JSON error message. */
-/* This Example expects token in Authorization header as "Bearer <token>" 
-Bearer token are used for simple token-based authentication with 
-OAuth 2.0 and other token-based authentication schemes. */
-app.Use(async (context, next) =>
-{
-    // Allow anonymous access to /login endpoint
-    if (context.Request.Path.Equals("/login", StringComparison.OrdinalIgnoreCase))
-    {
-        await next();
-        return;
-    }
+app.UseMiddleware<LoggingMiddleware>();
 
-    var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
-    if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer "))
-    {
-        context.Response.StatusCode = 401;
-        context.Response.ContentType = "application/json";
-        var errorJson = System.Text.Json.JsonSerializer.Serialize(new { error = "Unauthorized: Missing or invalid token." });
-        await context.Response.WriteAsync(errorJson);
-        return;
-    }
-
-    var token = authHeader.Substring("Bearer ".Length).Trim();
-    var tokenHandler = new JwtSecurityTokenHandler();
-    var key = Encoding.UTF8.GetBytes(jwtKey);
-    try
-    {
-        tokenHandler.ValidateToken(token, new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
-            ValidateAudience = true,
-            ValidAudience = jwtIssuer,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        }, out SecurityToken validatedToken);
-    }
-    catch
-    {
-        context.Response.StatusCode = 401;
-        context.Response.ContentType = "application/json";
-        var errorJson = System.Text.Json.JsonSerializer.Serialize(new { error = "Unauthorized: Invalid or expired token." });
-        await context.Response.WriteAsync(errorJson);
-        return;
-    }
-
-    await next();
-});
-
-// Middleware to log HTTP requests and responses
-app.Use(async (context, next) =>
-{
-    // Log Request details such as the HTTP method and the request path to the console for debugging and monitoring purposes.
-    var request = context.Request;
-    Console.WriteLine($"HTTP Request: {request.Method} {request.Path}");
-
-    /*Copy original response body stream.
-    The using statement ensures that the memory stream is properly disposed of after use, 
-    preventing memory leaks and ensuring efficient resource management. 
-    By wrapping the MemoryStream in a using block, we guarantee that it will be cleaned up even 
-    if an exception occurs, which is crucial for maintaining application performance and stability.*/
-    var originalBodyStream = context.Response.Body;
-    using var responseBody = new MemoryStream(); 
-
-    // Redirect the response body to the memory stream for logging
-    context.Response.Body = responseBody;
-
-    await next();
-
-    // Log Response 
-    context.Response.Body.Seek(0, SeekOrigin.Begin);
-    var responseText = await new StreamReader(context.Response.Body).ReadToEndAsync();
-    context.Response.Body.Seek(0, SeekOrigin.Begin);
-    Console.WriteLine($"HTTP Response: {context.Response.StatusCode} {responseText}");
-
-    /* Copy the contents of the new memory stream (which contains the response) to the original stream.
-    This step is crucial because the response body has been temporarily redirected to a memory stream for logging purposes.    By copying the contents back to the original stream, we ensure that the response is correctly sent
-    to the client while still allowing us to log the response content. */
-    await responseBody.CopyToAsync(originalBodyStream);
-    context.Response.Body = originalBodyStream;
-});
-
+/* Middleware to enforce HTTPS redirection for all incoming requests to enhance security 
+ by ensuring that all communication between the client and server is encrypted.*/
 app.UseHttpsRedirection();
 
 
@@ -144,8 +54,9 @@ app.MapGet("/user/{id}", async (int id, UserManagementApi.UserService userServic
 app.MapPost("/user", async (UserManagementApi.User user, UserManagementApi.UserService userService) =>
 {
     //validate the user data before trying to add the user to the collection
-    if (!IsValidUser(user, userService, out var error))
-        return Results.BadRequest(new { error });
+    var validationResult = await UserService.IsValidUser(user, userService);
+    if (!validationResult.IsValid)
+        return Results.BadRequest(new { error = validationResult.ErrorMessage });
 
     // try to add the user
     var success = await userService.Add(user);
@@ -163,8 +74,9 @@ app.MapPut("/user/{id}", async (int id, UserManagementApi.User updatedUser, User
         return Results.NotFound();
 
     //validate the updated user data
-    if (!IsValidUser(updatedUser, userService, out var error))
-        return Results.BadRequest(new { error });
+    var validationResult = await UserService.IsValidUser(updatedUser, userService);
+    if (!validationResult.IsValid)
+        return Results.BadRequest(new { error = validationResult.ErrorMessage });
 
     // try to update the user
     var updated = await userService.Update(id, updatedUser);
@@ -224,55 +136,10 @@ app.MapPost("/login", (LoginRequest login) =>
 
 app.Run();
 
-// Helper method to validate user data before creating or updating a user
-bool IsValidUser(UserManagementApi.User user, UserManagementApi.UserService userService, out string error)
-{
-    // valide if username is not empty, between 3 and 30 characters, and only contains letters and numbers
-    error = string.Empty;
-    if (string.IsNullOrWhiteSpace(user.Username) || user.Username.Length < 3 || user.Username.Length > 30 || !System.Text.RegularExpressions.Regex.IsMatch(user.Username, @"^[a-zA-Z0-9]+$"))
-    {
-        error = "Username is required, should be between 3 and 30 characters and only contain letters and numbers.";
-        return false;
-    }
-
-    // Validate email is not empty, less than 254 characters, and in a valid format
-    if (string.IsNullOrWhiteSpace(user.Email) || user.Email.Length > 254) 
-    {
-        error = "Email is required and should be less than 254 characters.";
-        return false;
-    }
-    try
-    {
-        // Validate email format
-        var addr = new System.Net.Mail.MailAddress(user.Email);
-        if (addr.Address != user.Email)
-        {
-            error = "Invalid email format.";
-            return false;
-        }
-    }
-    catch
-    {
-        error = "Invalid email format.";
-        return false;
-    }
-
-    // Validate if the username is already in use by another user
-    if (userService.GetAll().Result.Any(u => u.Username.Equals(user.Username, StringComparison.OrdinalIgnoreCase) && u.Id != user.Id))
-    {
-        error = "Username is already in use by another user.";
-        return false;
-    }
-
-    // Validate if the email is already in use by another user
-    if (userService.GetAll().Result.Any(u => u.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase) && u.Id != user.Id))
-    {
-        error = "Email is already in use by another user.";
-        return false;
-    }
-    return true;
-}
-
-// defines a data transfer object (DTO) for login request
+// defines a data transfer object (DTO) for login request.
 public record LoginRequest(string username, string password);
+
+public record UserValidationResult(bool IsValid, string ErrorMessage);
+
+//public record JWTOptions(string Key, string Issuer);
 
